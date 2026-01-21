@@ -208,19 +208,34 @@ document.querySelectorAll('.tab-bar-btn').forEach(btn => {
 // 스와이프
 let touchStartX = 0;
 let touchEndX = 0;
+let touchStartY = 0;
+let isSwipingInCategoryTabs = false;
 
 document.querySelector('.slide-container')?.addEventListener('touchstart', e => {
+    // 카테고리 탭 영역에서 시작하면 메인 스와이프 비활성화
+    const target = e.target;
+    const categoryTabs = target.closest('.category-tabs');
+    const cardsArea = target.closest('.cards-area');
+    
+    isSwipingInCategoryTabs = categoryTabs !== null;
+    
     touchStartX = e.changedTouches[0].screenX;
+    touchStartY = e.changedTouches[0].screenY;
 }, { passive: true });
 
 document.querySelector('.slide-container')?.addEventListener('touchend', e => {
     touchEndX = e.changedTouches[0].screenX;
-    handleSwipe();
+    
+    // 카테고리 탭 영역에서 스와이프하면 무시
+    if (!isSwipingInCategoryTabs) {
+        handleSwipe();
+    }
+    isSwipingInCategoryTabs = false;
 }, { passive: true });
 
 function handleSwipe() {
     const diff = touchStartX - touchEndX;
-    const threshold = 50;
+    const threshold = 80; // 민감도 낮춤: 50 → 80
     
     if (Math.abs(diff) > threshold) {
         if (diff > 0 && State.currentSlide < 3) {
@@ -264,6 +279,8 @@ function loadLocalData() {
         if (s.fontSize) {
             document.body.classList.add(`font-${s.fontSize}`);
             document.getElementById('fontSize').value = s.fontSize;
+            // 페이지 로드 시 글자 크기 적용
+            applyFontSize(s.fontSize);
         }
     }
 }
@@ -764,8 +781,47 @@ document.getElementById('darkModeToggle')?.addEventListener('change', (e) => {
 document.getElementById('fontSize')?.addEventListener('change', (e) => {
     document.body.classList.remove('font-small', 'font-medium', 'font-large');
     document.body.classList.add(`font-${e.target.value}`);
+    
+    // 글자 크기 실시간 적용
+    applyFontSize(e.target.value);
     saveSettings();
 });
+
+// 글자 크기를 동적으로 적용하는 함수
+function applyFontSize(size) {
+    const sizeMap = {
+        'small': '14px',
+        'medium': '16px',
+        'large': '18px'
+    };
+    
+    const rootSize = sizeMap[size] || '16px';
+    document.documentElement.style.setProperty('--base-font-size', rootSize);
+    
+    // 카드 텍스트 크기 조정
+    const cardSizeMap = {
+        'small': '0.75rem',
+        'medium': '0.85rem',
+        'large': '0.95rem'
+    };
+    document.documentElement.style.setProperty('--card-text-size', cardSizeMap[size] || '0.85rem');
+    
+    // 탭 버튼 텍스트 크기 조정
+    const tabSizeMap = {
+        'small': '0.7rem',
+        'medium': '0.75rem',
+        'large': '0.85rem'
+    };
+    document.documentElement.style.setProperty('--tab-text-size', tabSizeMap[size] || '0.75rem');
+    
+    // 메뉴 텍스트 크기 조정
+    const menuSizeMap = {
+        'small': '0.8rem',
+        'medium': '0.9rem',
+        'large': '1rem'
+    };
+    document.documentElement.style.setProperty('--menu-text-size', menuSizeMap[size] || '0.9rem');
+}
 
 // ========================================
 // 모달 - 청자 모드
